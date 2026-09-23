@@ -5,9 +5,18 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push makes an in-flight run irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -20,11 +29,31 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-      # setup → typecheck → lint → tests → multi-process race → production build
-      - run: npm run verify
-      # proves the tests fail when the guards are removed; the output lands on the run summary,
-      # which is readable without signing in
-      - run: |
-          # pipefail: without it the step's status would be tee's, hiding a failed mutation check
-          set -o pipefail
-          npm run test:sabotage | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # `shell: bash` runs with -eo pipefail, so a failure inside the pipe fails the step.
+      - name: verify (setup, typecheck, lint, tests, multi-process race, build)
+        shell: bash
+        run: npm run verify 2>&1 | tee verify.log
+
+      - name: sabotage (remove each guard, the tests must notice)
+        shell: bash
+        run: npm run test:sabotage 2>&1 | tee sabotage.log
+
+      # Actions logs need a sign-in; the run summary does not. Published either way, so a
+      # failure can be read from the run page.
+      - name: publish output to the run summary
+        if: always()
+        shell: bash
+        run: |
+          for log in verify.log sabotage.log; do
+            [ -f "$log" ] || continue
+            {
+              echo "<details><summary>${log} — node ${{ matrix.node }}</summary>"
+              echo
+              echo '```'
+              tail -c 60000 "$log"
+              echo '```'
+              echo "</details>"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
