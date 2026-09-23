@@ -22,5 +22,9 @@ jobs:
       - run: npm ci
       # setup → typecheck → lint → tests → multi-process race → production build
       - run: npm run verify
-      # proves the tests fail when the guards are removed
-      - run: npm run test:sabotage
+      # proves the tests fail when the guards are removed; the output lands on the run summary,
+      # which is readable without signing in
+      - run: |
+          # pipefail: without it the step's status would be tee's, hiding a failed mutation check
+          set -o pipefail
+          npm run test:sabotage | tee -a "$GITHUB_STEP_SUMMARY"
