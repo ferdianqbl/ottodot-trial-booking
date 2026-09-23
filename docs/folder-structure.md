@@ -6,6 +6,9 @@ Same layering as my boilerplate starter (`architecture.md` there): feature slice
 ```
 workspace/
 ├── README.md                     # how to run, design summary, verification — start here
+├── AI_USAGE.md                   # pointer to docs/AI_USAGE.md (the brief expects it at the root)
+├── .github/workflows/verify.yml  # CI: verify + sabotage on Node 20 and 24
+├── .nvmrc                        # Node 20, the floor declared in package.json engines
 ├── docs/                         # PRD, ARCHITECTURE, FEATURE_LIST, DESIGN, folder-structure, AI_USAGE
 ├── prisma/
 │   ├── schema/                   # multi-file Prisma schema
@@ -19,6 +22,7 @@ workspace/
 ├── scripts/
 │   ├── demo.ts                   # npm run demo — narrated scenarios on a throwaway DB
 │   ├── multi-process-race.ts     # npm run test:multiprocess — race across 4 OS processes
+│   ├── sabotage.ts               # npm run test:sabotage — removes each guard, asserts the tests notice
 │   └── temp-database.ts          # creates a migrated throwaway SQLite file
 ├── src/
 │   ├── app/                      # Next.js routes: page.tsx, bookings/[id], roster, error, not-found

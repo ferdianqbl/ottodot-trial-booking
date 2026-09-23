@@ -82,6 +82,7 @@ erDiagram
         enum status "authorized|captured|voided|declined"
         int amountCents "CHECK > 0"
         string providerRef "gateway authorization id"
+        string idempotencyKey "one key per checkout attempt"
         string declineReason
     }
 ```

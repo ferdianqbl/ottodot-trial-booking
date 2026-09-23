@@ -18,6 +18,7 @@ Every requirement in the brief, the feature that delivers it, where the code is,
 | F-10 | Database constraints | `prisma/migrations/…_init/migration.sql`, `booking.prisma` | CHECKs + partial unique index |
 | F-11 | Narrated demo | `scripts/demo.ts` (`npm run demo`) | throwaway DB |
 | F-12 | Multi-process race | `scripts/multi-process-race.ts` (`npm run test:multiprocess`) | 4 OS processes, 3 rounds |
+| F-13 | Sabotage run | `scripts/sabotage.ts` (`npm run test:sabotage`) | removes each guard, asserts the tests notice |
 
 ## 2. Traceability to the brief
 
@@ -36,7 +37,7 @@ Every requirement in the brief, the feature that delivers it, where the code is,
 | Seed: class with exactly 3 confirmed | F-09 | same (`cls_last_seat`) |
 | Seed: duplicate attempt | F-09 | Arjun in `cls_last_seat`; `npm run demo` step 2 |
 | Seed: payment failure | F-09 | Aisha in `cls_open`; `npm run demo` step 3 |
-| Tests or verification steps | F-11, F-12 | `npm run verify` |
+| Tests or verification steps | F-11, F-12, F-13 | `npm run verify` (CI runs it on Node 20 and 24) |
 | README / AI_USAGE sections | — | `README.md`, `docs/AI_USAGE.md` |
 
 ## 3. Behaviors by case

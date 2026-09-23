@@ -1,5 +1,7 @@
 # Ottodot — Trial Booking
 
+[![verify](https://github.com/ferdianqbl/ottodot-trial-booking/actions/workflows/verify.yml/badge.svg)](https://github.com/ferdianqbl/ottodot-trial-booking/actions/workflows/verify.yml)
+
 A small, working slice of trial-class booking for Ottodot's live online science and math classes. A parent picks a child and a trial class, pays with a mock card, and sees the booking status. Staff see an accurate roster. Every class is capped at **4 students**.
 
 The design is built around four invariants:
@@ -20,7 +22,7 @@ More detail: [docs/](docs/). How AI was used: [docs/AI_USAGE.md](docs/AI_USAGE.m
 
 ## How to run
 
-Node 20+. No Docker, no database server, no secrets.
+Node 20.9+ (`.nvmrc` pins 20; CI runs 20 and 24). No Docker, no database server, no secrets.
 
 ```bash
 npm install          # also generates the Prisma client
@@ -30,9 +32,10 @@ npm run dev          # http://localhost:3000
 
 ```bash
 npm run demo              # every required scenario, narrated in the terminal (uses a throwaway DB)
-npm test                  # 27 tests against a real SQLite database (throwaway DB; dev.db untouched)
+npm test                  # 30 tests against a real SQLite database (throwaway DB; dev.db untouched)
 npm run test:multiprocess # the last-seat race across 4 separate processes (~12s)
-npm run verify            # setup + typecheck + lint + tests + multi-process race
+npm run test:sabotage     # removes one guard at a time and checks the tests notice (~30s)
+npm run verify            # setup + typecheck + lint + tests + multi-process race + production build
 ```
 
 ### Try it in the browser
@@ -81,7 +84,7 @@ curl -s -H 'x-demo-user: staff' \
 - A **mock card gateway** with the authorize → capture/void flow of a real provider, and deterministic outcomes.
 - **Booking status and payment history** on a booking page (`booking.byId`), plus "Your bookings".
 - A **staff roster** (`roster.all` / `roster.byClass`): confirmed children only, with everyone else listed separately with a reason.
-- **Verification:** 27 tests on a real database (including tests that bypass the app to prove the database constraints), a narrated demo script, and a multi-process race.
+- **Verification:** 30 tests on a real database (including tests that bypass the app to prove the database constraints), a narrated demo script, a multi-process race, and a sabotage run that proves the tests catch real bugs. CI runs all of it on Node 20 and 24.
 
 ## Time spent
 
@@ -108,7 +111,7 @@ curl -s -H 'x-demo-user: staff' \
 | `Student` | id, parentId, name, age | FK parent; `CHECK age BETWEEN 3 AND 18` |
 | `TrialClass` | id, subject, title, startsAt, capacity, **confirmedCount** | `CHECK (confirmedCount BETWEEN 0 AND capacity)` |
 | `Booking` | id, trialClassId, studentId, status, statusReason, confirmedAt | **`UNIQUE (trialClassId, studentId) WHERE status IN ('pending_payment','confirmed')`**; `CHECK (status = 'confirmed') = (confirmedAt IS NOT NULL)`; status CHECK |
-| `PaymentAttempt` | id, bookingId, status, amountCents, currency, providerRef, declineReason | status CHECK; amount > 0 |
+| `PaymentAttempt` | id, bookingId, status, amountCents, currency, providerRef, idempotencyKey, declineReason | status CHECK; amount > 0 |
 
 - `confirmedCount` is the class's **seat counter**. Only the seat claim changes it, in the same transaction as the booking status. The tests assert it always equals the number of confirmed bookings, and the roster page shows that check.
 - The partial unique index is declared in the Prisma schema (Prisma 7.10 `partialIndexes`). The `CHECK` constraints can't be expressed in Prisma's schema language, so they're hand-written in the migration SQL.
@@ -151,6 +154,8 @@ Rule violations are errors with an HTTP status and a `domainCode`: `DUPLICATE_BO
 ### How payment failure is handled
 
 The card is authorized **outside** any database transaction. A decline is recorded in one short transaction: a `declined` PaymentAttempt, and the booking goes `pending_payment → payment_failed` with the reason. No seat is touched, so the child is not on the roster and the seat stays free. The parent can **Try again**, which creates a new booking; the failed one stays as history.
+
+Each Pay click carries an **idempotency key** (the client sends one; the server generates one if absent). The gateway returns the first authorization for a repeated key, so a retried request after a timeout never puts a second hold on the card, and the key is stored on the payment attempt for reconciliation.
 
 ### Two parents competing for the last seat (the required scenario)
 
@@ -202,10 +207,12 @@ If A and B press Pay at the same moment, both pass step 1 and both are authorize
 
 | What | Command | Result |
 |---|---|---|
-| Unit + integration tests (real SQLite, throwaway DB) | `npm test` | 27 passing |
+| Unit + integration tests (real SQLite, throwaway DB) | `npm test` | 30 passing |
 | Required scenarios, narrated | `npm run demo` | all five scenarios + invariant check |
 | Race across 4 OS processes, 3 rounds | `npm run test:multiprocess` | 1 confirmed / 19 cancelled, 0 errors, 1 capture per round |
-| Everything | `npm run verify` | setup → typecheck → lint → tests → multi-process |
+| Guards removed one at a time, tests must notice | `npm run test:sabotage` | all 5 mutations caught |
+| Everything | `npm run verify` | setup → typecheck → lint → tests → multi-process → build |
+| Every push | GitHub Actions | `verify` + `test:sabotage` on Node 20 and 24 |
 
 Test files:
 - `booking.race.test.ts`: the brief's exact sequence (A never touches the card); both paying at once (loser voided, never captured); 10 payers who all passed the pre-check (exactly 1 seat); double-click Pay (charged once).
@@ -215,11 +222,17 @@ Test files:
 
 Every test also checks the global invariants afterwards: ≤ capacity, seat counter = roster, one active booking per child and class, confirmed bookings charged exactly once, no authorization left unsettled.
 
-I also sabotaged the code to confirm the tests catch real bugs:
-- Removed the `confirmedCount < capacity` guard: 3 race tests fail, and the database `CHECK` rejected the 5th seat on its own.
-- Removed the pre-charge capacity check: the "A never touches the card" test fails.
-- Captured every authorization: the "loser is voided" test fails.
-- Removed the ownership and duplicate checks: the matching tests fail.
+A passing suite only proves nothing failed, so `npm run test:sabotage` removes one guard at a time and checks the right tests break — you can run it yourself:
+
+| Guard removed | Caught by |
+|---|---|
+| `confirmedCount < capacity` on the seat claim | 3 race tests (and the database `CHECK` rejects the 5th seat on its own) |
+| the capacity re-check before the card is touched | "A never touches the card" |
+| the capture/void decision (capture everyone) | "the loser is voided, never captured" |
+| the ownership check | ownership test + the 403 status-code test |
+| the duplicate check | duplicate test + the 409 status-code test |
+
+Each file is restored immediately afterwards and the script fails if a mutation goes unnoticed.
 
 ## What I deliberately cut
 
