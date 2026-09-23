@@ -28,7 +28,7 @@ flowchart LR
     subgraph Next["Next.js server"]
         TRPC["tRPC /api/v1<br/>x-demo-user → context"]
         Proc["procedures<br/>public · parent · staff"]
-        Svc["services → handlers<br/>booking · roster · demo"]
+        Svc["services<br/>booking · roster · demo"]
         Repo["repositories<br/>every Prisma statement"]
         Gateway["payment.gateway.ts<br/>authorize · capture · void"]
         WT["writeTransaction()"]
@@ -46,7 +46,7 @@ flowchart LR
 ```
 
 - **Procedures** (`src/server/trpc.ts`): `publicProcedure`, `parentProcedure` (the `x-demo-user` must be a known parent → `ctx.parentId`), and `staffProcedure`. A middleware maps `DomainError`s thrown by handlers to tRPC codes, and so to HTTP statuses.
-- **Layers per feature slice** (the boilerplate standard, see [folder-structure.md](folder-structure.md)): `*.schema.ts` (Zod) → `*.repository.ts` (every Prisma statement, with the client injected so it also runs inside a transaction) → `*.handlers.ts` (business logic, called directly by the tests and scripts) → `*.service.ts` (procedures, wrapping results in `apiResponse()`) → `*.router.ts`.
+- **Layers per feature slice** (see [folder-structure.md](folder-structure.md)): `*.schema.ts` (Zod) → `*.repository.ts` (every Prisma statement, with the client injected so it also runs inside a transaction) → `*.service.ts` (business logic as plain functions, called directly by the tests and scripts) → `*.router.ts` (procedure type, input schema, `apiResponse()`). Only the router knows about tRPC.
 - **`writeTransaction()`** is the only way to write (§6).
 
 ---

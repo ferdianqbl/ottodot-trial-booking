@@ -1,7 +1,8 @@
 # Folder Structure
 
-Same layering as my boilerplate starter (`architecture.md` there): feature slices with strict layer suffixes,
-`components/{layout,shared,ui}`, `providers/`, `hooks/`, and an `api/v1` tRPC gateway.
+My boilerplate starter's layout (`architecture.md` there): feature slices with strict layer suffixes,
+`components/{layout,shared,ui}`, `providers/`, `hooks/`, and an `api/v1` tRPC gateway. One deliberate
+simplification: four layers instead of five — see below.
 
 ```
 workspace/
@@ -35,7 +36,7 @@ workspace/
 │   │   └── ui/                   # shadcn/ui (radix-vega), restyled to docs/DESIGN.md
 │   ├── features/                 # domain slices
 │   │   ├── booking/
-│   │   │   ├── server/           # schema → repository → handlers → service → router (+ tests)
+│   │   │   ├── server/           # schema → repository → service → router (+ tests)
 │   │   │   └── components/       # booking-view.tsx, booking-detail-view.tsx
 │   │   ├── roster/               # server/ (rosters are read-only) + components/roster-view.tsx
 │   │   ├── payment/server/payment.gateway.ts   # mock authorize / capture / void
@@ -72,13 +73,19 @@ Same table as the starter; `*.types.ts` isn't needed at this size.
 |---|---|---|
 | `*.schema.ts` | Zod input validation; declares the `T*` input types | Zod only |
 | `*.repository.ts` | Every Prisma statement, as `(prisma: TPrisma) => ({ … })`. The client is injected, so the same methods run on the root client and inside a transaction | Prisma client, types |
-| `*.handlers.ts` | Business logic, authorization checks, orchestration — the race lives here | Repositories, gateway, errors |
-| `*.service.ts` | tRPC procedure declarations (`publicProcedure` / `parentProcedure` / `staffProcedure`), wrapping results in `apiResponse()` | Handlers, schemas, tRPC |
-| `*.router.ts` | Router instantiation spreading the service. No logic | Router helper, service |
+| `*.service.ts` | Business logic, authorization checks, orchestration — the race lives here. Plain functions: no tRPC, no `apiResponse` | Repositories, gateway, errors |
+| `*.router.ts` | Transport: procedure type (`publicProcedure` / `parentProcedure` / `staffProcedure`), input schema, one call into the service, `apiResponse()` | Services, schemas, tRPC |
+
+**Why four and not the starter's five.** The starter splits procedure declarations (`*.service.ts`) from logic
+(`*.handlers.ts`), leaving `*.router.ts` as a one-line spread. Here the procedures live in the router and the
+service holds the logic, which removes a layer that only forwarded calls. The split that earns its keep is the one
+between transport and logic: the services are plain functions, so the race tests, `npm run demo` and the
+multi-process race call `start()` and `pay()` directly — no tRPC caller, no context, no envelope to unwrap.
 
 ## Conventions
 
 - **Feature slices are vertical:** `server/` holds the layers, `components/` the views (`*-view.tsx`, default export).
+- **Only the router knows about tRPC.** A service can be called from a script, a job or a test without a transport.
 - **Types are prefixed `T`** (`TStartBookingInput`, `TRouterOutputs`, `TPrisma`).
 - **Every response is an `apiResponse` envelope** (`{ success, message, code, data }`); errors carry the same
   fields plus `domainCode`, so clients read `response.data` on success and `error.data.domainCode` on failure.
@@ -97,5 +104,6 @@ Only where the brief demands it:
 | `prisma migrate dev` | committed migration + `prisma migrate deploy` | reproducible schema including hand-written CHECKs |
 | JWT auth, `proxy.ts` edge guard, `protectedProcedure` | per-tab demo identity, `parentProcedure` / `staffProcedure` | real auth is out of scope; same procedure pattern |
 | Soft deletes (`deletedAt`) | hard rows, status transitions | a booking's history is the audit trail here |
+| `handlers` + `service` + `router` | `service` (logic) + `router` (transport) | the middle layer only forwarded calls |
 | shadcn kit (emerald theme), sidebar layout | shadcn/ui restyled to the design system ([DESIGN.md](DESIGN.md)); three pages, top nav | three screens don't need a sidebar |
 | mock-Prisma unit tests, Playwright | real-SQLite tests, demo and multi-process scripts | concurrency needs a real database |

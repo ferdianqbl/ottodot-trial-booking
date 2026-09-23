@@ -141,7 +141,7 @@ curl -s -H 'x-demo-user: staff' \
 | `roster.all`, `roster.byClass` | staff | confirmed roster + "not on roster" with reasons |
 | `demo.personas`, `demo.reset` | anyone | demo helpers (reset is disabled in production) |
 
-Each feature is a slice with the layers my boilerplate prescribes — `*.schema.ts` → `*.repository.ts` → `*.handlers.ts` → `*.service.ts` → `*.router.ts` (see [docs/folder-structure.md](docs/folder-structure.md)). All business logic is in `src/features/booking/server/booking.handlers.ts`; every Prisma statement is in the repository; services only declare procedures.
+Each feature is a vertical slice: `*.schema.ts` → `*.repository.ts` → `*.service.ts` → `*.router.ts` (see [docs/folder-structure.md](docs/folder-structure.md)). All business logic is in `src/features/booking/server/booking.service.ts` as plain functions — no tRPC, so the race tests and the scripts call them directly; every Prisma statement is in the repository; the router only validates input, picks the procedure type and wraps the result.
 Rule violations are errors with an HTTP status and a `domainCode`: `DUPLICATE_BOOKING` / `CLASS_FULL` / `NOT_PAYABLE` → 409, `CLASS_STARTED` → 412, `FORBIDDEN` → 403, `NOT_FOUND` → 404, no identity → 401, bad input → 400. **Payment outcomes are not errors:** a declined card or a lost seat is a successful request whose booking ends as `payment_failed` or `cancelled`.
 
 ### How duplicate bookings are prevented
