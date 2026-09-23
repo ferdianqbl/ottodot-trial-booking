@@ -16,7 +16,8 @@ type TMutation = {
   /** What a reviewer should picture: the guard being removed. */
   removes: string;
   file: string;
-  find: string;
+  /** Whitespace-insensitive, so reformatting the source does not break the run. Must match exactly once. */
+  find: RegExp;
   replace: string;
   /** Substrings of the test names that must fail once the guard is gone. */
   expectFailing: string[];
@@ -30,7 +31,7 @@ const MUTATIONS: TMutation[] = [
     name: "M1 capacity guard",
     removes: "the `confirmedCount < capacity` condition on the seat claim, so the UPDATE always succeeds",
     file: REPOSITORY,
-    find: "where: { id: trialClassId, confirmedCount: { lt: prisma.trialClass.fields.capacity } },",
+    find: /where:\s*\{\s*id:\s*trialClassId,\s*confirmedCount:\s*\{\s*lt:\s*prisma\.trialClass\.fields\.capacity\s*\},?\s*\},?/,
     replace: "where: { id: trialClassId },",
     // Not the brief's sequence: there, A is refused by the pre-check before the claim is ever reached.
     expectFailing: ["both pay at the same moment", "the database decides", "double-clicking Pay"],
@@ -39,7 +40,8 @@ const MUTATIONS: TMutation[] = [
     name: "M2 pre-charge capacity check",
     removes: "the capacity re-check before the card is touched, so a doomed payment still authorizes",
     file: SERVICE,
-    find: "if (trialClass.confirmedCount >= trialClass.capacity) {",
+    // The `{` distinguishes pay()'s re-check from start()'s single-statement guard.
+    find: /if\s*\(\s*trialClass\.confirmedCount\s*>=\s*trialClass\.capacity\s*\)\s*\{/,
     replace: "if (false) {",
     expectFailing: ["the brief's sequence"],
   },
@@ -47,15 +49,15 @@ const MUTATIONS: TMutation[] = [
     name: "M3 capture/void decision",
     removes: "the branch that voids a loser's authorization, so every authorization is captured",
     file: SERVICE,
-    find: "      if (wonSeat) await paymentGateway.capture(auth.authorizationId);\n      else await paymentGateway.void(auth.authorizationId);",
-    replace: "      await paymentGateway.capture(auth.authorizationId);",
+    find: /if\s*\(\s*wonSeat\s*\)\s*await\s+paymentGateway\.capture\(\s*auth\.authorizationId\s*\);\s*else\s+await\s+paymentGateway\.void\(\s*auth\.authorizationId\s*\);/,
+    replace: "await paymentGateway.capture(auth.authorizationId);",
     expectFailing: ["both pay at the same moment"],
   },
   {
     name: "M4 ownership check",
     removes: "the check that a parent may only book for their own children",
     file: SERVICE,
-    find: 'if (student.parentId !== parentId) throw new DomainError("FORBIDDEN", "You can only book for your own children.");',
+    find: /if\s*\(\s*student\.parentId\s*!==\s*parentId\s*\)\s*throw new DomainError\(\s*"FORBIDDEN",[\s\S]*?\);/,
     replace: "",
     expectFailing: ["ownership", "status codes"],
   },
@@ -63,7 +65,7 @@ const MUTATIONS: TMutation[] = [
     name: "M5 duplicate check",
     removes: "the refusal to book a child who is already confirmed in the class",
     file: SERVICE,
-    find: "if (active?.status === \"confirmed\") throw duplicate();",
+    find: /if\s*\(\s*active\?\.status\s*===\s*"confirmed"\s*\)\s*throw duplicate\(\);/,
     replace: "",
     expectFailing: ["duplicate", "status codes"],
   },
@@ -116,8 +118,12 @@ console.log("Sabotage run: remove one guard at a time and check the tests notice
 
 for (const mutation of MUTATIONS) {
   const original = readFileSync(mutation.file, "utf8");
-  if (!original.includes(mutation.find)) {
-    throw new Error(`${mutation.name}: the code it patches has moved (${mutation.file}). Update scripts/sabotage.ts.`);
+  const matches = original.match(new RegExp(mutation.find, "g")) ?? [];
+  if (matches.length !== 1) {
+    throw new Error(
+      `${mutation.name}: expected its pattern to match once in ${mutation.file}, found ${matches.length}. ` +
+        `The guard moved or was duplicated — update scripts/sabotage.ts.`
+    );
   }
 
   try {
