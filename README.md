@@ -199,7 +199,11 @@ The brief's sequence:
 3. B pays: the claim succeeds (3 → 4), so B is `confirmed` and captured.
 4. A pays: step 1 sees 4/4, so A is `cancelled` and **A's card is never touched**.
 
+![The brief's last-seat sequence](docs/images/last-seat-race-1-scenario.png)
+
 If A and B press Pay at the same moment, both pass step 1 and both are authorized. The single `UPDATE` lets exactly one through, and the other is **voided, never charged**. If app code ever tried to add a 5th seat anyway, the database `CHECK` rejects it; I verified this by deleting the guard (see Verification).
+
+![Both parents pay at the same moment](docs/images/last-seat-race-2-simultaneous.png)
 
 **Why this approach**
 - **The database decides, not app timing or an in-process lock.** SQLite runs one writer at a time. On Postgres, the same `UPDATE` takes a row lock on the class and re-checks `confirmedCount < capacity` after a concurrent writer commits. It holds across several server instances; `npm run test:multiprocess` runs it across 4 processes.
