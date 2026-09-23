@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Ottodot take-home: trial class booking with a race-safe last seat",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
@@ -17,7 +20,8 @@
     "demo": "tsx scripts/demo.ts",
     "test": "vitest run",
     "test:multiprocess": "tsx scripts/multi-process-race.ts",
-    "verify": "npm run setup && npm run typecheck && npm run lint && npm test && npm run test:multiprocess"
+    "verify": "npm run setup && npm run typecheck && npm run lint && npm test && npm run test:multiprocess && npm run build",
+    "test:sabotage": "tsx scripts/sabotage.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "7.10.0",
