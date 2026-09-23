@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { paymentGateway } from "@/features/payment/server/payment.gateway";
 import type { TPrismaClient } from "@/lib/db/prisma";
 import { isUniqueViolation, writeTransaction } from "@/lib/db/write-transaction";
@@ -95,7 +96,10 @@ export const createBookingHandlers = (prisma: TPrismaClient) => {
      * Declines and lost seats are outcomes, not errors: the booking ends as payment_failed / cancelled.
      */
     async pay(parentId: string, rawInput: TPayBookingInput) {
-      const { bookingId, cardOutcome, gatewayDelayMs } = payBookingSchema.parse(rawInput);
+      const { bookingId, cardOutcome, gatewayDelayMs, idempotencyKey } = payBookingSchema.parse(rawInput);
+      // One key per checkout attempt. The client sends one per Pay click, so a network retry of that
+      // click reuses the first authorization instead of putting a second hold on the card.
+      const paymentKey = idempotencyKey ?? `${bookingId}:${randomUUID()}`;
 
       const booking = await bookingRepo.findBookingWithClass(bookingId);
       if (!booking || booking.student.parentId !== parentId) throw new DomainError("NOT_FOUND", "Booking not found.");
@@ -121,6 +125,7 @@ export const createBookingHandlers = (prisma: TPrismaClient) => {
         amountCents: TRIAL_FEE_CENTS,
         currency: CURRENCY,
         outcome: cardOutcome,
+        idempotencyKey: paymentKey,
         delayMs: gatewayDelayMs,
       });
 
@@ -132,6 +137,7 @@ export const createBookingHandlers = (prisma: TPrismaClient) => {
             status: "declined",
             amountCents: TRIAL_FEE_CENTS,
             currency: CURRENCY,
+            idempotencyKey: paymentKey,
             declineReason: auth.declineReason,
           });
           await repo.finishPendingBooking(bookingId, "payment_failed", auth.declineReason);
@@ -147,6 +153,7 @@ export const createBookingHandlers = (prisma: TPrismaClient) => {
           status: "authorized",
           amountCents: TRIAL_FEE_CENTS,
           currency: CURRENCY,
+          idempotencyKey: paymentKey,
           providerRef: auth.authorizationId,
         });
 

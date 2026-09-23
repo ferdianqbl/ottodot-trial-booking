@@ -66,6 +66,7 @@ export const BookingRepository = (prisma: TPrisma) => ({
     status: PaymentStatus;
     amountCents: number;
     currency: string;
+    idempotencyKey: string;
     providerRef?: string;
     declineReason?: string;
   }) {

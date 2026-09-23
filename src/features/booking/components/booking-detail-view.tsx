@@ -209,7 +209,14 @@ function PaymentForm({ booking: b }: { booking: TBooking }) {
       </CardContent>
       <CardFooter className="flex-col items-stretch gap-4 sm:items-start">
         <Button
-          onClick={() => pay.mutate({ bookingId: b.id, cardOutcome, gatewayDelayMs: slowGateway ? SLOW_GATEWAY_MS : 0 })}
+          onClick={() =>
+            pay.mutate({
+              bookingId: b.id,
+              cardOutcome,
+              gatewayDelayMs: slowGateway ? SLOW_GATEWAY_MS : 0,
+              idempotencyKey: crypto.randomUUID(),
+            })
+          }
           disabled={pay.isPending}
         >
           {pay.isPending && <Spinner />}

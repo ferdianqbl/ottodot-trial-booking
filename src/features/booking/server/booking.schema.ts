@@ -20,6 +20,8 @@ export const payBookingSchema = z.object({
   cardOutcome: cardOutcomeSchema.default("approve"),
   /** Slows the mock gateway down to widen the race window in demos and tests. */
   gatewayDelayMs: z.number().int().min(0).max(5000).default(0),
+  /** One key per Pay click. A retry of the same click reuses it, so the card is authorized once. */
+  idempotencyKey: z.string().min(8).max(64).optional(),
 });
 export type TPayBookingInput = z.input<typeof payBookingSchema>;
 

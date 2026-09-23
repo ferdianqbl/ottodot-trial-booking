@@ -1,14 +1,14 @@
 import { expect } from "vitest";
 import prisma from "@/lib/db/prisma";
 import { seedDemoData } from "@/features/demo/server/demo.seed";
-import { gatewayLog } from "@/features/payment/server/payment.gateway";
+import { gatewayLog, resetGateway } from "@/features/payment/server/payment.gateway";
 import { parseDemoUser } from "@/server/context";
 import { appRouter } from "@/server/routers/_app";
 import { createCallerFactory } from "@/server/trpc";
 
 export async function resetDemoData() {
   await seedDemoData(prisma);
-  gatewayLog.length = 0;
+  resetGateway();
 }
 
 /** Call the tRPC API in-process as a parent id, "staff", or nobody (null). */

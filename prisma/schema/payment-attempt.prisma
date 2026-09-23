@@ -16,6 +16,8 @@ model PaymentAttempt {
   currency      String        @default("USD")
   /// Mock gateway authorization id.
   providerRef   String?
+  /// The key sent to the gateway for this attempt; the same key never charges the card twice.
+  idempotencyKey String?
   declineReason String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
