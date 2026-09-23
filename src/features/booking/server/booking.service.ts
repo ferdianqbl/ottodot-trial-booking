@@ -1,8 +1,11 @@
-import { randomUUID } from "node:crypto";
 import { paymentGateway } from "@/features/payment/server/payment.gateway";
 import type { TPrismaClient } from "@/lib/db/prisma";
-import { isUniqueViolation, writeTransaction } from "@/lib/db/write-transaction";
+import {
+  isUniqueViolation,
+  writeTransaction,
+} from "@/lib/db/write-transaction";
 import { DomainError } from "@/server/errors";
+import { randomUUID } from "node:crypto";
 import { BookingRepository } from "./booking.repository";
 import {
   CLASS_FULL_REASON,
@@ -13,7 +16,8 @@ import {
   type TStartBookingInput,
 } from "./booking.schema";
 
-const seatsLeft = (c: { capacity: number; confirmedCount: number }) => Math.max(0, c.capacity - c.confirmedCount);
+const seatsLeft = (c: { capacity: number; confirmedCount: number }) =>
+  Math.max(0, c.capacity - c.confirmedCount);
 
 export const createBookingService = (prisma: TPrismaClient) => {
   const bookingRepo = BookingRepository(prisma);
@@ -21,8 +25,15 @@ export const createBookingService = (prisma: TPrismaClient) => {
   /** A booking with its class, child and payment history — only visible to the child's parent. */
   const getBooking = async (parentId: string, bookingId: string) => {
     const booking = await bookingRepo.findBookingDetail(bookingId);
-    if (!booking || booking.student.parentId !== parentId) throw new DomainError("NOT_FOUND", "Booking not found.");
-    return { ...booking, trialClass: { ...booking.trialClass, seatsLeft: seatsLeft(booking.trialClass) } };
+    if (!booking || booking.student.parentId !== parentId)
+      throw new DomainError("NOT_FOUND", "Booking not found.");
+    return {
+      ...booking,
+      trialClass: {
+        ...booking.trialClass,
+        seatsLeft: seatsLeft(booking.trialClass),
+      },
+    };
   };
 
   return {
@@ -56,30 +67,52 @@ export const createBookingService = (prisma: TPrismaClient) => {
         bookingRepo.findStudentById(studentId),
       ]);
 
-      if (!trialClass) throw new DomainError("NOT_FOUND", "Trial class not found.");
+      if (!trialClass)
+        throw new DomainError("NOT_FOUND", "Trial class not found.");
       if (!student) throw new DomainError("NOT_FOUND", "Child not found.");
-      if (student.parentId !== parentId) throw new DomainError("FORBIDDEN", "You can only book for your own children.");
-      if (trialClass.startsAt <= now) throw new DomainError("CLASS_STARTED", "This class has already started.");
+      if (student.parentId !== parentId)
+        throw new DomainError(
+          "FORBIDDEN",
+          "You can only book for your own children.",
+        );
+      if (trialClass.startsAt <= now)
+        throw new DomainError(
+          "CLASS_STARTED",
+          "This class has already started.",
+        );
 
       const duplicate = () =>
-        new DomainError("DUPLICATE_BOOKING", `${student.name} already has a confirmed seat in this class.`);
+        new DomainError(
+          "DUPLICATE_BOOKING",
+          `${student.name} already has a confirmed seat in this class.`,
+        );
 
-      const active = await bookingRepo.findActiveBooking(trialClassId, studentId);
+      const active = await bookingRepo.findActiveBooking(
+        trialClassId,
+        studentId,
+      );
       if (active?.status === "confirmed") throw duplicate();
       if (active) return { bookingId: active.id, resumed: true };
 
       // Fast feedback when the class is visibly full. Not a hold and not the real guard:
       // the atomic seat claim in `pay` decides who gets a seat.
-      if (trialClass.confirmedCount >= trialClass.capacity) throw new DomainError("CLASS_FULL", "This class is full.");
+      if (trialClass.confirmedCount >= trialClass.capacity)
+        throw new DomainError("CLASS_FULL", "This class is full.");
 
       try {
-        const booking = await writeTransaction((tx) => BookingRepository(tx).createBooking(trialClassId, studentId));
+        const booking = await writeTransaction((tx) =>
+          BookingRepository(tx).createBooking(trialClassId, studentId),
+        );
         return { bookingId: booking.id, resumed: false };
       } catch (error) {
         if (!isUniqueViolation(error)) throw error;
         // A concurrent request for the same child won the partial unique index: continue with its booking.
-        const winner = await bookingRepo.findActiveBooking(trialClassId, studentId);
-        if (winner?.status === "pending_payment") return { bookingId: winner.id, resumed: true };
+        const winner = await bookingRepo.findActiveBooking(
+          trialClassId,
+          studentId,
+        );
+        if (winner?.status === "pending_payment")
+          return { bookingId: winner.id, resumed: true };
         throw duplicate();
       }
     },
@@ -96,18 +129,21 @@ export const createBookingService = (prisma: TPrismaClient) => {
      * Declines and lost seats are outcomes, not errors: the booking ends as payment_failed / cancelled.
      */
     async pay(parentId: string, rawInput: TPayBookingInput) {
-      const { bookingId, cardOutcome, gatewayDelayMs, idempotencyKey } = payBookingSchema.parse(rawInput);
+      const { bookingId, cardOutcome, gatewayDelayMs, idempotencyKey } =
+        payBookingSchema.parse(rawInput);
       // One key per checkout attempt. The client sends one per Pay click, so a network retry of that
       // click reuses the first authorization instead of putting a second hold on the card.
       const paymentKey = idempotencyKey ?? `${bookingId}:${randomUUID()}`;
 
       const booking = await bookingRepo.findBookingWithClass(bookingId);
-      if (!booking || booking.student.parentId !== parentId) throw new DomainError("NOT_FOUND", "Booking not found.");
-      if (booking.status === "confirmed") return getBooking(parentId, bookingId); // already paid: no second charge
+      if (!booking || booking.student.parentId !== parentId)
+        throw new DomainError("NOT_FOUND", "Booking not found.");
+      if (booking.status === "confirmed")
+        return getBooking(parentId, bookingId); // already paid: no second charge
       if (booking.status !== "pending_payment") {
         throw new DomainError(
           "NOT_PAYABLE",
-          `This checkout has ended (${booking.status}). Start a new booking to try again.`
+          `This checkout has ended (${booking.status}). Start a new booking to try again.`,
         );
       }
       const { trialClass } = booking;
@@ -115,7 +151,11 @@ export const createBookingService = (prisma: TPrismaClient) => {
       // 1. Seat already gone?
       if (trialClass.confirmedCount >= trialClass.capacity) {
         await writeTransaction((tx) =>
-          BookingRepository(tx).finishPendingBooking(bookingId, "cancelled", CLASS_FULL_REASON)
+          BookingRepository(tx).finishPendingBooking(
+            bookingId,
+            "cancelled",
+            CLASS_FULL_REASON,
+          ),
         );
         return getBooking(parentId, bookingId);
       }
@@ -140,7 +180,11 @@ export const createBookingService = (prisma: TPrismaClient) => {
             idempotencyKey: paymentKey,
             declineReason: auth.declineReason,
           });
-          await repo.finishPendingBooking(bookingId, "payment_failed", auth.declineReason);
+          await repo.finishPendingBooking(
+            bookingId,
+            "payment_failed",
+            auth.declineReason,
+          );
         });
         return getBooking(parentId, bookingId);
       }
@@ -159,11 +203,20 @@ export const createBookingService = (prisma: TPrismaClient) => {
 
         const claimed = await repo.claimSeat(trialClass.id);
         if (claimed === 0) {
-          await repo.finishPendingBooking(bookingId, "cancelled", CLASS_FULL_REASON);
+          await repo.finishPendingBooking(
+            bookingId,
+            "cancelled",
+            CLASS_FULL_REASON,
+          );
           return { attemptId: attempt.id, wonSeat: false };
         }
 
-        const confirmed = await repo.finishPendingBooking(bookingId, "confirmed", null, new Date());
+        const confirmed = await repo.finishPendingBooking(
+          bookingId,
+          "confirmed",
+          null,
+          new Date(),
+        );
         if (confirmed === 0) {
           // Another request for this same booking (a double-click) already finished it: give the seat back.
           await repo.releaseSeat(trialClass.id);
@@ -176,7 +229,10 @@ export const createBookingService = (prisma: TPrismaClient) => {
       if (wonSeat) await paymentGateway.capture(auth.authorizationId);
       else await paymentGateway.void(auth.authorizationId);
       await writeTransaction((tx) =>
-        BookingRepository(tx).settlePaymentAttempt(attemptId, wonSeat ? "captured" : "voided")
+        BookingRepository(tx).settlePaymentAttempt(
+          attemptId,
+          wonSeat ? "captured" : "voided",
+        ),
       );
 
       return getBooking(parentId, bookingId);
