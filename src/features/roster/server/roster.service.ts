@@ -1,16 +1,58 @@
-import { apiResponse } from "@/lib/utils/api-response";
-import { staffProcedure } from "@/server/trpc";
-import { createRosterHandlers } from "./roster.handlers";
-import { classIdSchema } from "./roster.schema";
+import type { TPrismaClient } from "@/lib/db/prisma";
+import { DomainError } from "@/server/errors";
+import { RosterRepository } from "./roster.repository";
 
-export const RosterService = {
-  all: staffProcedure.query(async ({ ctx }) => {
-    const data = await createRosterHandlers(ctx.prisma).list();
-    return apiResponse(data, "Rosters retrieved successfully", 200);
-  }),
+/**
+ * Class rosters for teachers/ops. The roster is exactly the `confirmed` bookings;
+ * everything else (pending, payment_failed, cancelled) is listed separately as "not on roster"
+ * so staff can see why a child is missing.
+ */
+export const createRosterService = (prisma: TPrismaClient) => {
+  const rosterRepo = RosterRepository(prisma);
 
-  byClass: staffProcedure.input(classIdSchema).query(async ({ ctx, input }) => {
-    const data = await createRosterHandlers(ctx.prisma).getByClass(input.classId);
-    return apiResponse(data, "Roster retrieved successfully", 200);
-  }),
+  const list = async (classId?: string) => {
+    const classes = await rosterRepo.listClassesWithBookings(classId);
+
+    return classes.map((c) => {
+      const confirmed = c.bookings.filter((b) => b.status === "confirmed");
+      return {
+        id: c.id,
+        subject: c.subject,
+        title: c.title,
+        startsAt: c.startsAt,
+        capacity: c.capacity,
+        /** The seat counter used by the seat claim; must always equal roster.length. */
+        seatCounter: c.confirmedCount,
+        roster: confirmed.map((b) => ({
+          bookingId: b.id,
+          studentName: b.student.name,
+          studentAge: b.student.age,
+          parentName: b.student.parent.name,
+          parentEmail: b.student.parent.email,
+          confirmedAt: b.confirmedAt,
+        })),
+        notOnRoster: c.bookings
+          .filter((b) => b.status !== "confirmed")
+          .map((b) => ({
+            bookingId: b.id,
+            studentName: b.student.name,
+            status: b.status,
+            statusReason: b.statusReason,
+            createdAt: b.createdAt,
+          })),
+      };
+    });
+  };
+
+  return {
+    list,
+
+    async getByClass(classId: string) {
+      const [roster] = await list(classId);
+      if (!roster) throw new DomainError("NOT_FOUND", "Trial class not found.");
+      return roster;
+    },
+  };
 };
+
+export type TRosterService = ReturnType<typeof createRosterService>;

@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import prisma from "@/lib/db/prisma";
 import { gatewayLog } from "@/features/payment/server/payment.gateway";
-import { createRosterHandlers } from "@/features/roster/server/roster.handlers";
+import { createRosterService } from "@/features/roster/server/roster.service";
 import { expectInvariants, paymentsFor, resetDemoData, rosterIds } from "@/test/helpers";
-import { createBookingHandlers } from "./booking.handlers";
+import { createBookingService } from "./booking.service";
 
-const { getBooking, start: startBooking, pay: payForBooking } = createBookingHandlers(prisma);
-const listRosters = (classId?: string) => createRosterHandlers(prisma).list(classId);
+const { getBooking, start: startBooking, pay: payForBooking } = createBookingService(prisma);
+const listRosters = (classId?: string) => createRosterService(prisma).list(classId);
 
 describe("seed data", () => {
   beforeEach(resetDemoData);

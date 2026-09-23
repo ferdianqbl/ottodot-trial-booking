@@ -22,7 +22,7 @@ type TMutation = {
   expectFailing: string[];
 };
 
-const HANDLERS = "src/features/booking/server/booking.handlers.ts";
+const SERVICE = "src/features/booking/server/booking.service.ts";
 const REPOSITORY = "src/features/booking/server/booking.repository.ts";
 
 const MUTATIONS: TMutation[] = [
@@ -38,7 +38,7 @@ const MUTATIONS: TMutation[] = [
   {
     name: "M2 pre-charge capacity check",
     removes: "the capacity re-check before the card is touched, so a doomed payment still authorizes",
-    file: HANDLERS,
+    file: SERVICE,
     find: "if (trialClass.confirmedCount >= trialClass.capacity) {",
     replace: "if (false) {",
     expectFailing: ["the brief's sequence"],
@@ -46,7 +46,7 @@ const MUTATIONS: TMutation[] = [
   {
     name: "M3 capture/void decision",
     removes: "the branch that voids a loser's authorization, so every authorization is captured",
-    file: HANDLERS,
+    file: SERVICE,
     find: "      if (wonSeat) await paymentGateway.capture(auth.authorizationId);\n      else await paymentGateway.void(auth.authorizationId);",
     replace: "      await paymentGateway.capture(auth.authorizationId);",
     expectFailing: ["both pay at the same moment"],
@@ -54,7 +54,7 @@ const MUTATIONS: TMutation[] = [
   {
     name: "M4 ownership check",
     removes: "the check that a parent may only book for their own children",
-    file: HANDLERS,
+    file: SERVICE,
     find: 'if (student.parentId !== parentId) throw new DomainError("FORBIDDEN", "You can only book for your own children.");',
     replace: "",
     expectFailing: ["ownership", "status codes"],
@@ -62,7 +62,7 @@ const MUTATIONS: TMutation[] = [
   {
     name: "M5 duplicate check",
     removes: "the refusal to book a child who is already confirmed in the class",
-    file: HANDLERS,
+    file: SERVICE,
     find: "if (active?.status === \"confirmed\") throw duplicate();",
     replace: "",
     expectFailing: ["duplicate", "status codes"],

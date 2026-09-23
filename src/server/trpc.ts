@@ -18,7 +18,7 @@ const t = initTRPC.context<TContext>().create({
   },
 });
 
-/** Turns business-rule violations thrown by handlers into the right tRPC/HTTP error code. */
+/** Turns business-rule violations thrown by a service into the right tRPC/HTTP error code. */
 const mapDomainErrors = t.middleware(async ({ next }) => {
   const result = await next();
   if (!result.ok && result.error.cause instanceof DomainError) {

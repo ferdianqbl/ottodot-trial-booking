@@ -7,8 +7,8 @@ import { createTempDatabase } from "./temp-database";
 const cleanup = createTempDatabase("demo");
 const { default: prisma } = await import("../src/lib/db/prisma");
 const { seedDemoData } = await import("../src/features/demo/server/demo.seed");
-const { createBookingHandlers } = await import("../src/features/booking/server/booking.handlers");
-const { start: startBooking, pay: payForBooking } = createBookingHandlers(prisma);
+const { createBookingService } = await import("../src/features/booking/server/booking.service");
+const { start: startBooking, pay: payForBooking } = createBookingService(prisma);
 const { DomainError } = await import("../src/server/errors");
 
 type Booking = Awaited<ReturnType<typeof payForBooking>>;

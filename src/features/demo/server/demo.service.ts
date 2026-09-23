@@ -1,16 +1,25 @@
-import { apiResponse } from "@/lib/utils/api-response";
-import { publicProcedure } from "@/server/trpc";
-import { createDemoHandlers } from "./demo.handlers";
+import type { TPrismaClient } from "@/lib/db/prisma";
+import { DomainError } from "@/server/errors";
+import { DemoRepository } from "./demo.repository";
+import { seedDemoData } from "./demo.seed";
 
-export const DemoService = {
-  /** Who you can act as in the demo (stands in for sign-in). */
-  personas: publicProcedure.query(async ({ ctx }) => {
-    const data = await createDemoHandlers(ctx.prisma).listPersonas();
-    return apiResponse(data, "Personas retrieved successfully", 200);
-  }),
+export const createDemoService = (prisma: TPrismaClient) => {
+  const demoRepo = DemoRepository(prisma);
 
-  reset: publicProcedure.mutation(async ({ ctx }) => {
-    const data = await createDemoHandlers(ctx.prisma).reset();
-    return apiResponse(data, "Demo data reset successfully", 200);
-  }),
+  return {
+    listPersonas() {
+      return demoRepo.listPersonas();
+    },
+
+    /** Restore the seed scenarios. Disabled in production builds. */
+    async reset() {
+      if (process.env.NODE_ENV === "production") {
+        throw new DomainError("FORBIDDEN", "Demo reset is disabled in production.");
+      }
+      await seedDemoData(prisma);
+      return { ok: true };
+    },
+  };
 };
+
+export type TDemoService = ReturnType<typeof createDemoService>;

@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import prisma from "@/lib/db/prisma";
 import { CLASS_FULL_REASON } from "./booking.schema";
 import { expectInvariants, gatewayCallsFor, paymentsFor, resetDemoData, rosterIds } from "@/test/helpers";
-import { createBookingHandlers } from "./booking.handlers";
+import { createBookingService } from "./booking.service";
 
-const { start: startBooking, pay: payForBooking } = createBookingHandlers(prisma);
+const { start: startBooking, pay: payForBooking } = createBookingService(prisma);
 
 // cls_last_seat is seeded with exactly 3 of 4 seats confirmed.
 const CLASS = "cls_last_seat";

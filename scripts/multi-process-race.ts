@@ -17,8 +17,8 @@ const childId = (i: number) => `stu_mp_${i}`;
 
 async function worker(index: number, startAt: number) {
   const { default: prisma } = await import("../src/lib/db/prisma");
-  const { createBookingHandlers } = await import("../src/features/booking/server/booking.handlers");
-  const { start: startBooking, pay: payForBooking } = createBookingHandlers(prisma);
+  const { createBookingService } = await import("../src/features/booking/server/booking.service");
+  const { start: startBooking, pay: payForBooking } = createBookingService(prisma);
   while (Date.now() < startAt) await new Promise((r) => setTimeout(r, 1));
 
   const outcomes = await Promise.all(
