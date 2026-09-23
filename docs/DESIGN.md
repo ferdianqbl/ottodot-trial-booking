@@ -131,19 +131,13 @@ Transparent background on the cream canvas, #000000 text in 16px / 500, 1px bord
 
 **Role:** White card showing one item in a grid — a class, with its subject, time and seats
 
-#ffffff background, 1px #d1d5dc border, 16px radius, no shadow. Internal layout: 12px row gap between thumbnail image, title (ABC Favorit 18px / 500), and price (ABC Favorit 16px / 500 in #000000). Tile sits on the cream canvas with 32px gap between siblings in a grid.
+#ffffff background, 1px #d1d5dc border, 16px radius, no shadow. Internal layout: 12px row gap between the subject badge, the title (ABC Favorit 18px / 500), the supporting line (14px / 400 in #242423) and the action. Tile sits on the cream canvas with 32px gap between siblings in a grid.
 
 ### Feature Card
 
 **Role:** The main block on a page — a form or a highlighted section
 
 #ffffff background, 1px #d1d5dc border, 24px radius, 32–40px internal padding. Heading at ABC Favorit 30–36px / 500 in #000000, optional supporting copy at 16px / 400 in #242423. Generous breathing room — no shadows, only the hairline border to define the edge.
-
-### Phone Mockup Frame
-
-**Role:** Decorative device frame that holds a screenshot inside feature cards (unused in this build)
-
-Outlined phone illustration in #242423 stroke, white screen, 16px radius on the device, content (a small product card) inset with 8px padding. Always rendered as a flat illustration, never a photo.
 
 ### Pink Coin Mascot
 
@@ -195,29 +189,25 @@ ABC Favorit 14px / 400 in #242423, no underline, 8px vertical gap between siblin
 
 ## Imagery
 
-Illustration-driven, not photographic. The dominant visual motif is a flat hot-pink (#ff90e8) coin carrying the brand initial in black with a thin black outline, scattered at multiple sizes and 45° tilts as a mascot. Secondary visuals are flat mockups rendered inside a black-outlined phone frame sitting on a white screen. The illustration style is hand-drawn and slightly wobbly — line work is 1–2px black strokes, fills are flat, no gradients or shading. Icons are inline 1px black line glyphs drawn in the same stroke language. Photography is absent; the system relies on flat vector coin and device illustrations, plus the seat meters and marker swatches, to carry visual interest.
+Illustration-driven, not photographic. The dominant visual motif is a flat hot-pink (#ff90e8) coin carrying the brand initial in black with a thin black outline, scattered at multiple sizes and 45° tilts as a mascot. The illustration style is hand-drawn and slightly wobbly — line work is 1–2px black strokes, fills are flat, no gradients or shading. Icons are inline 1px black line glyphs drawn in the same stroke language. Photography is absent; the system relies on flat vector coin and device illustrations, plus the seat meters and marker swatches, to carry visual interest.
 
 ## Layout
 
 Max-width 1200px centered content with full-bleed cream #f4f4f0 background. The page opens with an oversized 30–48px headline and a 1–2 line subhead, followed by the page's primary action. The mascot coins float as absolute-positioned decorative elements in the hero corners at 45° tilts, breaking the centered alignment. Below the hero, the page flows into a 2-column or 3-column card grid for product tiles and feature blocks, with alternating white card surfaces on the cream canvas separated by 40–48px vertical gaps. The top navigation is a single horizontal bar with the wordmark on the left, text links beside it, and the account controls on the right; an active nav link is marked by a black filled pill behind white text. Sections never alternate dark/light — the whole page stays on cream with white cards.
 
-## Agent Prompt Guide
-
-Quick Color Reference
+## Quick reference
 
 - text: #000000 (primary), #242423 (secondary)
 - background: #f4f4f0 (canvas), #ffffff (cards)
-- border: #d1d5dc (hairline)
-- accent: #ff90e8 (pink coin mascot)
-- primary action: no distinct CTA color
-- secondary marker: #ffc900 / #f1f333 / #dc341e (inline swatches only)
+- border: #d1d5dc (hairline), #242423 (input controls)
+- accent: #ff90e8 (coin, decorative only)
+- primary action: #000000 filled; there is no colored CTA
+- marker swatches: #ffc900 / #f1f333 / #dc341e / #ff90e8 — inline punctuation only, never a fill
 
-3 Example Component Prompts
-No distinct primary action color was observed; use the extracted neutral button treatments instead of inventing a filled CTA color.
+Two components from this build, described in the system's terms:
 
-2. Product tile card: #ffffff background, 1px #d1d5dc border, 16px radius, 24px padding, no shadow. Thumbnail 16:9 image filling width with 8px radius, 12px gap, then title in ABC Favorit 18px / 500 #000000, then price in 16px / 500 #000000. Sits on the cream canvas in a 3-column grid with 32px gap between tiles.
-
-3. Feature card: #ffffff background, 1px #d1d5dc border, 24px radius, 40px padding. Heading in ABC Favorit 36px / 500, #000000, letter-spacing -0.612px, followed by supporting copy in 16px / 400 #242423 with 12px top gap. Optional phone-mockup illustration on the right: 1px #242423 stroke outline, white screen, 16px device radius, flat product preview inside.
+1. **Class tile:** #ffffff background, 1px #d1d5dc border, 16px radius, 24px padding, no shadow. Subject badge and an optional "Last seat" marker on the first row, title in 18px / 500, time and seat count in 14px / 400 #242423, then a black filled button or a status badge. Sits in a 2-column grid with 32px gaps.
+2. **Payment card:** #ffffff background, 1px #d1d5dc border, 24px radius, 32px padding. Heading in 24px / 500, choice cards for the card outcome (4px radius, hairline border that turns #000000 when selected), then the black filled Pay button.
 
 ## Influences
 
