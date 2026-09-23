@@ -1,8 +1,7 @@
 # Folder Structure
 
-My boilerplate starter's layout (`architecture.md` there): feature slices with strict layer suffixes,
-`components/{layout,shared,ui}`, `providers/`, `hooks/`, and an `api/v1` tRPC gateway. One deliberate
-simplification: four layers instead of five — see below.
+Feature slices with strict layer suffixes, `components/{layout,shared,ui}`, `providers/`, `hooks/`,
+and an `api/v1` tRPC gateway.
 
 ```
 workspace/
@@ -67,7 +66,7 @@ workspace/
 
 ## Layer suffix rules
 
-Same table as the starter; `*.types.ts` isn't needed at this size.
+Four suffixes per slice. A `*.types.ts` layer isn't needed at this size.
 
 | Suffix | Purpose | Dependencies allowed |
 |---|---|---|
@@ -76,11 +75,11 @@ Same table as the starter; `*.types.ts` isn't needed at this size.
 | `*.service.ts` | Business logic, authorization checks, orchestration — the race lives here. Plain functions: no tRPC, no `apiResponse` | Repositories, gateway, errors |
 | `*.router.ts` | Transport: procedure type (`publicProcedure` / `parentProcedure` / `staffProcedure`), input schema, one call into the service, `apiResponse()` | Services, schemas, tRPC |
 
-**Why four and not the starter's five.** The starter splits procedure declarations (`*.service.ts`) from logic
-(`*.handlers.ts`), leaving `*.router.ts` as a one-line spread. Here the procedures live in the router and the
-service holds the logic, which removes a layer that only forwarded calls. The split that earns its keep is the one
-between transport and logic: the services are plain functions, so the race tests, `npm run demo` and the
-multi-process race call `start()` and `pay()` directly — no tRPC caller, no context, no envelope to unwrap.
+**Why the split falls here.** The line that earns its keep is between transport and logic: a service is plain
+functions, so the race tests, `npm run demo` and the multi-process race call `start()` and `pay()` directly — no
+tRPC caller, no context, no envelope to unwrap. A separate layer that only declared procedures and forwarded to
+the logic would add a hop without adding a decision, so the router does both: it validates, picks the procedure
+type, calls the service once and wraps the result.
 
 ## Conventions
 
@@ -94,16 +93,13 @@ multi-process race call `start()` and `pay()` directly — no tRPC caller, no co
 - **Tests sit next to the layer they cover** and run against real SQLite on a throwaway file.
 - **UI uses design tokens only.** `globals.css` clears Tailwind's default palette, type scale, radii and shadows, so only [DESIGN.md](DESIGN.md) values exist (`text-caption`, `bg-card`, `rounded-cards`…). New shadcn components go through `npx shadcn add`, then get restyled to the tokens and their `cn` import switched from `"cn"` to `@/lib/utils` (the configured one).
 
-## Differences from the boilerplate starter
+## Choices worth naming
 
-Only where the brief demands it:
-
-| Starter | Here | Why |
-|---|---|---|
-| Postgres (`adapter-pg`) | SQLite (`adapter-better-sqlite3`) | zero-setup review; the design ports back (ARCHITECTURE §6) |
-| `prisma migrate dev` | committed migration + `prisma migrate deploy` | reproducible schema including hand-written CHECKs |
-| JWT auth, `proxy.ts` edge guard, `protectedProcedure` | per-tab demo identity, `parentProcedure` / `staffProcedure` | real auth is out of scope; same procedure pattern |
-| Soft deletes (`deletedAt`) | hard rows, status transitions | a booking's history is the audit trail here |
-| `handlers` + `service` + `router` | `service` (logic) + `router` (transport) | the middle layer only forwarded calls |
-| shadcn kit (emerald theme), sidebar layout | shadcn/ui restyled to the design system ([DESIGN.md](DESIGN.md)); three pages, top nav | three screens don't need a sidebar |
-| mock-Prisma unit tests, Playwright | real-SQLite tests, demo and multi-process scripts | concurrency needs a real database |
+| Choice | Why |
+|---|---|
+| SQLite via `adapter-better-sqlite3`, not Postgres | a reviewer runs it with `npm install`; the design ports over unchanged ([ARCHITECTURE §6](ARCHITECTURE.md#6-sqlite-specifics-and-writetransaction)) |
+| A committed migration + `prisma migrate deploy`, not `migrate dev` | the schema is reproducible, including the hand-written `CHECK` constraints |
+| Per-tab demo identity, not real auth | out of scope for the brief; the procedure pattern (`parentProcedure` / `staffProcedure`) is the same one real auth would use |
+| Status transitions, no soft deletes | a booking's history *is* the audit trail: a failed attempt stays as a row |
+| Tests against real SQLite, not a mocked Prisma | the invariants under test are concurrency ones; a mock cannot prove them |
+| shadcn/ui restyled to the design system, three pages, top nav | three screens don't need a sidebar, and the brief weights backend over frontend polish |
