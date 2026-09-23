@@ -11,6 +11,11 @@ every value below belongs to this system. It is not Ottodot's brand guideline.
 **Implemented as:** tokens in `src/app/globals.css`, components in `src/components/ui` (shadcn/ui restyled to these
 tokens) and `src/components/shared`. See [folder-structure.md](folder-structure.md).
 
+> **Note for reviewers.** This system already existed; the UI here was assembled from it rather than designed for
+> this exercise, which is why this is the longest document in `docs/` despite the brief weighting backend over
+> frontend. The work the brief actually asks about is in [ARCHITECTURE.md](ARCHITECTURE.md),
+> [FLOWS.md](FLOWS.md) and [API.md](API.md).
+
 The system is a warm-cream canvas stamped with a single hand-drawn pink coin motif and an inky geometric sans. The off-white #f4f4f0 background feels like a sketchbook page; black type and black filled buttons land on it with the weight of a marker stroke. Surfaces stay flat — white cards sit on the warm canvas with thin gray hairline borders rather than shadows. Saturated color appears in small, deliberate punctuation: a pink coin mascot, yellow and green accent swatches used as inline color markers, and the occasional red highlight. The tone is informal and anti-corporate — typography is tight, tracking pulls negative on display sizes, and the type scale stretches from 14px body up to 192px hero type, all from one family. Components are utility-shaped (4px radii on inputs and buttons, 16–24px on larger cards) and never decorated with gradients or glow.
 
 ## Tokens — Colors

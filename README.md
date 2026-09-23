@@ -88,7 +88,26 @@ curl -s -H 'x-demo-user: staff' \
 
 ## Time spent
 
-**About 3 hours**, roughly: 30 min on the brief and the race design (no hold, authorize → claim → capture/void), 30 min on schema, constraints and seed data, 1 hour on the booking and payment logic plus its tests, 30 min on the UI, and 30 min on docs and the verification scripts.
+**About 4 hours** for the slice the brief asks for, roughly: 40 min on the brief and the race design (no hold,
+authorize → claim → capture/void), 40 min on the schema, constraints and seed data, 1h30 on the booking and payment
+logic with its tests, 30 min on the UI, and 40 min on the docs and the verification scripts.
+
+### What came after the timebox
+
+The slice above was complete at that point. A few things were added afterwards, so they are **not** part of the four
+hours — I list them because they change what the repo contains, and because most of them make a claim checkable
+instead of asserted:
+
+| Added | Why |
+|---|---|
+| CI on Node 20 and 24 (`verify` + `test:sabotage`) | every claim below is re-checked on each push. It immediately caught a lockfile that `npm ci` could not install on Node 20 |
+| `npm run test:sabotage` | turns "my tests would catch a real bug" into a command a reviewer can run |
+| An idempotency key per checkout attempt | a retried payment request reuses the first authorization instead of holding the card twice |
+| The UI rebuilt on my own design system | reuse of an existing system ([docs/DESIGN.md](docs/DESIGN.md)), not frontend work the brief asked for |
+| [FLOWS.md](docs/FLOWS.md) and [API.md](docs/API.md) | a click-to-database trace per feature, and the endpoint reference |
+
+If you are timing the exercise, read the four-hour slice: the data model, `booking.service.ts`, the tests, and the
+race section below.
 
 ## Assumptions
 
