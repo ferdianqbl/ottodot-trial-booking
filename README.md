@@ -216,7 +216,7 @@ If A and B press Pay at the same moment, both pass step 1 and both are authorize
 
 Test files:
 - `booking.race.test.ts`: the brief's exact sequence (A never touches the card); both paying at once (loser voided, never captured); 10 payers who all passed the pre-check (exactly 1 seat); double-click Pay (charged once).
-- `booking.handlers.test.ts`: the seed covers the required cases; happy path; duplicate; resume; concurrent checkouts for one child; decline; retry; a finished checkout can't be paid; idempotent pay; full class; started class; ownership; roster filtering.
+- `booking.service.test.ts`: the seed covers the required cases; happy path; duplicate; resume; concurrent checkouts for one child; decline; retry; a finished checkout can't be paid; idempotent pay; full class; started class; ownership; roster filtering.
 - `constraints.test.ts`: writes that **bypass the app**: the database rejects a 5th seat, a second active booking, and a confirmed booking without `confirmedAt`.
 - `api.test.ts`: identity (401/403), staff-only rosters, HTTP status codes and `domainCode`s, and that a declined payment is a 200 with `payment_failed`.
 

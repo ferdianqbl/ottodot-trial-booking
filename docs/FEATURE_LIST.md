@@ -6,10 +6,10 @@ Every requirement in the brief, the feature that delivers it, where the code is,
 
 | ID | Feature | Code | Notes |
 |---|---|---|---|
-| F-01 | Class catalog with live seats | `booking.classes` → handlers `listClasses` | upcoming only; `seatsLeft` from the seat counter |
+| F-01 | Class catalog with live seats | `booking.classes` → service `listClasses` | upcoming only; `seatsLeft` from the seat counter |
 | F-02 | Choose a child | `booking.myChildren`; `booking-view.tsx` | only the acting parent's children |
-| F-03 | Start a booking ("move to payment") | `booking.start` → handlers `start` | creates or resumes `pending_payment`; no seat held; duplicate/full/started checks |
-| F-04 | Pay with a mock card | `booking.pay` → handlers `pay`; `payment.gateway.ts` | re-check → authorize → atomic seat claim → capture/void |
+| F-03 | Start a booking ("move to payment") | `booking.start` → service `start` | creates or resumes `pending_payment`; no seat held; duplicate/full/started checks |
+| F-04 | Pay with a mock card | `booking.pay` → service `pay`; `payment.gateway.ts` | re-check → authorize → atomic seat claim → capture/void |
 | F-05 | Booking status + payment history | `booking.byId`; `booking-detail-view.tsx` | status badge, reason, *Try again*, attempts table |
 | F-06 | "Your bookings" | `booking.myBookings` | all of a parent's bookings with status |
 | F-07 | Staff roster | `roster.all`, `roster.byClass`; `roster-view.tsx` | confirmed only + "not on roster" with reasons + seat-counter check |
@@ -25,10 +25,10 @@ Every requirement in the brief, the feature that delivers it, where the code is,
 | Brief requirement | Features | Verified by |
 |---|---|---|
 | Parent chooses a child and an available trial class | F-01, F-02 | UI; `api.test.ts` › booking requires acting as a known parent |
-| Parent submits a trial booking | F-03 | `booking.handlers.test.ts` › happy path |
+| Parent submits a trial booking | F-03 | `booking.service.test.ts` › happy path |
 | Mock payment step / result recorded | F-04 | `PaymentAttempt` rows asserted in every payment test; `gatewayCallsFor` in race tests |
 | Booking status shown after submission | F-05, F-06 | `booking.pay` returns the booking; `api.test.ts` › full flow; UI booking page |
-| Admin/teacher sees the roster (UI or API) | F-07 | `booking.handlers.test.ts` › roster; `api.test.ts` › rosters are staff-only, roster over HTTP |
+| Admin/teacher sees the roster (UI or API) | F-07 | `booking.service.test.ts` › roster; `api.test.ts` › rosters are staff-only, roster over HTTP |
 | Prevent duplicate confirmed bookings | F-03, F-10 | › duplicate; › concurrent checkouts for the same child; `constraints.test.ts` › one active booking |
 | Prevent overbooking beyond 4 | F-04, F-10 | `booking.race.test.ts` (all); `constraints.test.ts` › never more than capacity; multi-process |
 | Payment failure doesn't add the child to the roster | F-04 | › declined card; › retrying after a decline; › a finished checkout cannot be paid |

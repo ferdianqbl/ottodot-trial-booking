@@ -9,7 +9,7 @@
 1. **Turning the brief into invariants** (≤ 4 confirmed, no duplicate, no roster entry without payment, one winner for the last seat) before any code.
 2. **Laying out design options with tradeoffs** and asking me to decide: last-seat strategy, API style, UI scope, docs layout.
 3. **Schema and migration**, including a partial unique index and hand-written `CHECK` constraints.
-4. **Implementation:** the booking handlers (two-step checkout, authorize → atomic seat claim → capture/void), tRPC procedures with parent/staff identity, the mock gateway, and three pages.
+4. **Implementation:** the booking service (two-step checkout, authorize → atomic seat claim → capture/void), tRPC procedures with parent/staff identity, the mock gateway, and three pages.
 5. **Design-system rebase:** I supplied the design system ([DESIGN.md](DESIGN.md)); Claude rebuilt the UI on shadcn/ui components and restyled each one to its tokens (cream canvas, ink-black actions, hairline borders, no shadows, one type family).
 6. **Verification:** tests on a real SQLite database, a narrated demo script, a multi-process race script, deliberate "sabotage" runs, a production build, and a browser walkthrough of the two-tab race.
 7. **Documentation:** README and the docs in this folder.

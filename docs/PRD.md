@@ -96,7 +96,7 @@ Staff open **Class rosters**: each class shows its confirmed children (with pare
 
 | ID | Scenario | Expected | Test |
 |---|---|---|---|
-| AT-1 | Book an open class and pay | pending (no seat) → confirmed, captured | `booking.handlers.test.ts` › happy path |
+| AT-1 | Book an open class and pay | pending (no seat) → confirmed, captured | `booking.service.test.ts` › happy path |
 | AT-2 | Book Arjun into `cls_last_seat` again | 409 `DUPLICATE_BOOKING`, nothing written | › duplicate; `api.test.ts` |
 | AT-3 | Declined card | `payment_failed`, declined attempt, roster and seats unchanged | › declined card |
 | AT-4 | Retry after a decline | new booking confirmed; old stays failed | › retrying after a decline |

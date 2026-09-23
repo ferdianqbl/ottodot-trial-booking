@@ -45,7 +45,7 @@ flowchart LR
     Repo --> DB
 ```
 
-- **Procedures** (`src/server/trpc.ts`): `publicProcedure`, `parentProcedure` (the `x-demo-user` must be a known parent → `ctx.parentId`), and `staffProcedure`. A middleware maps `DomainError`s thrown by handlers to tRPC codes, and so to HTTP statuses.
+- **Procedures** (`src/server/trpc.ts`): `publicProcedure`, `parentProcedure` (the `x-demo-user` must be a known parent → `ctx.parentId`), and `staffProcedure`. A middleware maps `DomainError`s thrown by a service to tRPC codes, and so to HTTP statuses.
 - **Layers per feature slice** (see [folder-structure.md](folder-structure.md)): `*.schema.ts` (Zod) → `*.repository.ts` (every Prisma statement, with the client injected so it also runs inside a transaction) → `*.service.ts` (business logic as plain functions, called directly by the tests and scripts) → `*.router.ts` (procedure type, input schema, `apiResponse()`). Only the router knows about tRPC.
 - **`writeTransaction()`** is the only way to write (§6).
 
@@ -127,7 +127,7 @@ All three end states are terminal. Every transition is a compare-and-set (`UPDAT
 sequenceDiagram
     autonumber
     participant P as Parent
-    participant H as handlers.pay
+    participant H as service.pay
     participant G as Gateway
     participant D as Database
 
@@ -190,7 +190,7 @@ Both pass the re-check (3/4) and both are authorized. The two seat-claim transac
 
 ### Moving to Postgres
 
-The handlers carry over unchanged. Swap the adapter to `@prisma/adapter-pg`; the partial unique index and `CHECK`s are standard Postgres SQL; `writeTransaction()` would retry `40001`/`40P01` instead of `SQLITE_BUSY`.
+The services carry over unchanged. Swap the adapter to `@prisma/adapter-pg`; the partial unique index and `CHECK`s are standard Postgres SQL; `writeTransaction()` would retry `40001`/`40P01` instead of `SQLITE_BUSY`.
 
 ---
 
