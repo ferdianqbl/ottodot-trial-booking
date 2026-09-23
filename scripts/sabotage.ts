@@ -7,7 +7,9 @@
  * script fails if any mutation slips through unnoticed or if a file is left modified.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 type TMutation = {
   name: string;
@@ -67,20 +69,44 @@ const MUTATIONS: TMutation[] = [
   },
 ];
 
-/** Runs the suite and returns the names of the tests that failed. Vitest reports failures on stderr. */
+const REPORT = join(tmpdir(), `ottodot-sabotage-${process.pid}.json`);
+
+type TVitestReport = {
+  testResults?: { assertionResults?: { status: string; fullName?: string; title?: string }[] }[];
+};
+
+/**
+ * Runs the suite and returns the names of the tests that failed.
+ *
+ * The result is read from vitest's JSON report rather than its console output: the human-readable
+ * format differs between a terminal and CI, and a run with several failures prints enough stack
+ * traces to overflow the default 1MB pipe buffer.
+ */
 function runSuite(): { failed: string[]; passed: boolean } {
+  let passed = true;
   try {
-    execFileSync("npx", ["vitest", "run", "--reporter=dot"], { encoding: "utf8", stdio: "pipe" });
-    return { failed: [], passed: true };
-  } catch (error) {
-    const { stdout = "", stderr = "" } = error as { stdout?: string; stderr?: string };
-    // "FAIL  path/to/file.test.ts > suite > test name"
-    const failed = [...`${stdout}\n${stderr}`.matchAll(/^\s*FAIL\s+\S+\s+>\s+(.+)$/gm)].map((m) => m[1].trim());
-    if (failed.length === 0) {
-      throw new Error(`The suite failed but no test names could be read from its output:\n${stderr.slice(0, 600)}`);
-    }
-    return { failed, passed: false };
+    execFileSync("npx", ["vitest", "run", "--reporter=json", `--outputFile=${REPORT}`], {
+      encoding: "utf8",
+      stdio: "pipe",
+      maxBuffer: 32 * 1024 * 1024,
+    });
+  } catch {
+    passed = false; // a non-zero exit means tests failed; the report says which
   }
+
+  let report: TVitestReport;
+  try {
+    report = JSON.parse(readFileSync(REPORT, "utf8")) as TVitestReport;
+  } catch {
+    throw new Error(`vitest wrote no JSON report to ${REPORT}. Run \`npx vitest run\` to see what happened.`);
+  }
+
+  const failed = (report.testResults ?? [])
+    .flatMap((file) => file.assertionResults ?? [])
+    .filter((test) => test.status === "failed")
+    .map((test) => test.fullName ?? test.title ?? "(unnamed test)");
+
+  return { failed, passed: passed && failed.length === 0 };
 }
 
 const label = (text: string) => text.padEnd(28, ".");
@@ -124,4 +150,5 @@ if (unnoticed > 0 || !restored.passed) {
   console.error(`\n${unnoticed} mutation(s) went unnoticed.`);
   process.exit(1);
 }
+rmSync(REPORT, { force: true });
 console.log(`\nAll ${MUTATIONS.length} mutations were caught.`);
