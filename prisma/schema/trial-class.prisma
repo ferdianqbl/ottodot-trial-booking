@@ -1,0 +1,12 @@
+model TrialClass {
+  id             String    @id @default(cuid())
+  subject        String
+  title          String
+  startsAt       DateTime
+  capacity       Int       @default(4)
+  /// Number of confirmed bookings (the seat counter). Only the seat claim in booking.handlers.ts changes it,
+  /// in the same transaction as the booking status. A CHECK in the migration keeps it within 0..capacity.
+  confirmedCount Int       @default(0)
+  bookings       Booking[]
+  createdAt      DateTime  @default(now())
+}

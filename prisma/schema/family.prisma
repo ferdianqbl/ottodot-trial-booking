@@ -1,0 +1,20 @@
+model Parent {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  students  Student[]
+  createdAt DateTime  @default(now())
+}
+
+/// A child. Bookings belong to the child; the paying parent is always `student.parent`.
+model Student {
+  id        String    @id @default(cuid())
+  parentId  String
+  parent    Parent    @relation(fields: [parentId], references: [id])
+  name      String
+  age       Int
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+
+  @@index([parentId])
+}
