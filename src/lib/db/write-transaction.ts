@@ -1,7 +1,14 @@
 import { Prisma } from "@/generated/prisma/client";
 import prisma from "./prisma";
 
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 8;
+
+/**
+ * SQLite serializes writers, so under load a transaction spends its time queueing. Prisma's defaults
+ * (2s to start, 5s to finish) are tuned for a connection pool and give up too early on a busy,
+ * CPU-starved machine — a 2-core CI runner racing 20 checkouts, for example.
+ */
+const TRANSACTION_LIMITS = { maxWait: 15_000, timeout: 15_000 };
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** The better-sqlite3 adapter reports SQLITE_BUSY as P1008 ("Operations timed out"). */
@@ -19,14 +26,14 @@ export const isUniqueViolation = (error: unknown) =>
  *    is open — so it joins that transaction and is rolled back with it.
  * 2. With several processes on one SQLite file, SQLite may answer a lock conflict with SQLITE_BUSY
  *    instead of waiting. A failed transaction has rolled back completely and our writes are
- *    compare-and-set, so it is safe to retry.
+ *    compare-and-set, so it is safe to retry — up to MAX_ATTEMPTS, with exponential backoff.
  *
  * Keep transactions write-first and short: never call the payment gateway inside one.
  */
 export async function writeTransaction<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await prisma.$transaction(fn);
+      return await prisma.$transaction(fn, TRANSACTION_LIMITS);
     } catch (error) {
       if (!isLockTimeout(error) || attempt >= MAX_ATTEMPTS) throw error;
       await sleep(10 * 2 ** attempt + Math.random() * 20);
