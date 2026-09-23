@@ -1,0 +1,24 @@
+enum PaymentStatus {
+  authorized
+  captured
+  voided
+  declined
+}
+
+/// One row per card authorization attempt: authorized → captured (seat won) or voided (seat lost);
+/// declined never reached authorization. Money only moves on capture.
+model PaymentAttempt {
+  id            String        @id @default(cuid())
+  bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  status        PaymentStatus
+  amountCents   Int
+  currency      String        @default("USD")
+  /// Mock gateway authorization id.
+  providerRef   String?
+  declineReason String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([bookingId])
+}

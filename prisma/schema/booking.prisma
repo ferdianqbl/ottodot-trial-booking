@@ -1,0 +1,27 @@
+enum BookingStatus {
+  pending_payment
+  confirmed
+  payment_failed
+  cancelled
+}
+
+model Booking {
+  id           String           @id @default(cuid())
+  trialClassId String
+  trialClass   TrialClass       @relation(fields: [trialClassId], references: [id])
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id])
+  status       BookingStatus    @default(pending_payment)
+  /// Why a booking ended as payment_failed or cancelled, e.g. "Card declined" or "Class filled up".
+  statusReason String?
+  confirmedAt  DateTime?
+  payments     PaymentAttempt[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  /// At most one ACTIVE booking per child per class. Failed and cancelled bookings stay as history,
+  /// so retrying after a failure creates a new row.
+  @@unique([trialClassId, studentId], map: "Booking_one_active_per_child_class", where: raw("status IN ('pending_payment', 'confirmed')"))
+  @@index([trialClassId, status])
+  @@index([studentId])
+}
