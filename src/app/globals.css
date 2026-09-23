@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* The design system is light-only: `dark:` classes in the shadcn components apply only under a
+   `.dark` class, which is never set (without this they would follow the OS setting). */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system tokens: docs/DESIGN.md.
+ *
+ * Tailwind's default palette, type scale, fonts, radii and shadows are cleared, so only these values
+ * exist. A stray `bg-blue-500`, `text-sm` or `shadow-md` generates no CSS at all.
+ *
+ * Spacing needs no tokens: the design's 4px base unit is Tailwind's `--spacing`, so spacing-8 → `p-2`,
+ * spacing-16 → `p-4`, spacing-24 → `p-6`, spacing-32 → `p-8`, spacing-48 → `p-12`.
+ */
+@theme static {
+  --color-*: initial;
+  --text-*: initial;
+  --font-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+
+  /* Colors */
+  --color-canvas-cream: #f4f4f0;
+  --color-paper-white: #ffffff;
+  --color-ink-black: #000000;
+  --color-graphite: #242423;
+  --color-hairline: #d1d5dc;
+  --color-coin-pink: #ff90e8;
+  --color-highlight-yellow: #ffc900;
+  --color-highlight-lime: #f1f333;
+  --color-highlight-vermillion: #dc341e;
+
+  /* Type scale: each `text-*` utility sets size, line height and tracking together */
+  --text-caption: 14px;
+  --text-caption--line-height: 1.43;
+  --text-caption--letter-spacing: -0.028px;
+  --text-body-sm: 16px;
+  --text-body-sm--line-height: 1.5;
+  --text-body-sm--letter-spacing: -0.064px;
+  --text-body: 18px;
+  --text-body--line-height: 1.56;
+  --text-body--letter-spacing: -0.108px;
+  --text-subheading: 24px;
+  --text-subheading--line-height: 1.33;
+  --text-subheading--letter-spacing: -0.264px;
+  --text-heading-sm: 30px;
+  --text-heading-sm--line-height: 1.38;
+  --text-heading-sm--letter-spacing: -0.39px;
+  --text-heading: 36px;
+  --text-heading--line-height: 1.4;
+  --text-heading--letter-spacing: -0.612px;
+  --text-heading-lg: 48px;
+  --text-heading-lg--line-height: 1.25;
+  --text-heading-lg--letter-spacing: -0.96px;
+  --text-display: 96px;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -2.4px;
+
+  /* Radii: controls are 4px or a full pill, cards 16px, tiles 24px, never anything in between.
+     The shadcn scale (sm…4xl) is pinned to those values so stock classes stay on-system. */
+  --radius-inputs: 4px;
+  --radius-buttons: 4px;
+  --radius-cards: 16px;
+  --radius-tiles: 24px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 16px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-4xl: 24px;
+
+  /* Layout */
+  --container-page: 1200px;
+}
+
+@theme inline {
+  /* ABC Favorit is the brand face; Inter (loaded by next/font in layout.tsx) is its documented substitute. */
+  --font-abc-favorit: "ABC Favorit", var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-abc-favorit);
+  --font-heading: var(--font-abc-favorit);
+
+  /* shadcn semantic colors, resolved from the variables below */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+/* shadcn's semantic roles, mapped onto the design system */
+:root {
+  color-scheme: light;
+  --background: var(--color-canvas-cream); /* level 0: the warm canvas every page sits on */
+  --foreground: var(--color-ink-black);
+  --card: var(--color-paper-white); /* level 1: cards lifted off the canvas by a hairline, never a shadow */
+  --card-foreground: var(--color-ink-black);
+  --popover: var(--color-paper-white);
+  --popover-foreground: var(--color-ink-black);
+  --primary: var(--color-ink-black); /* level 2: the only filled surface (primary button, active nav pill) */
+  --primary-foreground: var(--color-paper-white);
+  --secondary: var(--color-canvas-cream);
+  --secondary-foreground: var(--color-ink-black);
+  --muted: var(--color-canvas-cream);
+  --muted-foreground: var(--color-graphite);
+  --accent: var(--color-canvas-cream);
+  --accent-foreground: var(--color-ink-black);
+  --destructive: var(--color-highlight-vermillion); /* emphasis only: text and borders, never a fill */
+  --border: var(--color-hairline);
+  --input: var(--color-graphite);
+  --ring: var(--color-ink-black);
+}
+
+@layer base {
+  * {
+    /* Focus is always the full ink ring; a faded one is hard to see on the cream canvas. */
+    @apply border-border outline-ring;
+  }
+  html {
+    @apply font-sans;
+    /* ABC Favorit's stylistic alternates are part of the brand voice; always on. */
+    font-feature-settings: "ss04" on, "ss11" on;
+  }
+  body {
+    @apply bg-background text-body-sm text-foreground antialiased;
+  }
+  /* Icons are 1px line glyphs: 1.5 in lucide's 24-unit grid draws 1px at the default 16px size. */
+  .lucide {
+    stroke-width: 1.5;
+  }
+}
