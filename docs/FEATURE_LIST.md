@@ -1,6 +1,7 @@
 # Feature List & Traceability
 
 Every requirement in the brief, the feature that delivers it, where the code is, and how it's verified.
+For how a feature runs end to end see [FLOWS.md](FLOWS.md); for endpoint detail see [API.md](API.md).
 
 ## 1. Features
 

@@ -9,7 +9,7 @@ workspace/
 ├── AI_USAGE.md                   # pointer to docs/AI_USAGE.md (the brief expects it at the root)
 ├── .github/workflows/verify.yml  # CI: verify + sabotage on Node 20 and 24
 ├── .nvmrc                        # Node 20, the floor declared in package.json engines
-├── docs/                         # PRD, ARCHITECTURE, FEATURE_LIST, DESIGN, folder-structure, AI_USAGE
+├── docs/                         # PRD, ARCHITECTURE, FLOWS, API, FEATURE_LIST, DESIGN, folder-structure, AI_USAGE
 ├── prisma/
 │   ├── schema/                   # multi-file Prisma schema
 │   │   ├── index.prisma          # datasource & generator (client → src/generated/prisma)

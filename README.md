@@ -131,6 +131,8 @@ curl -s -H 'x-demo-user: staff' \
 
 ### API (tRPC, `src/server/routers/_app.ts`)
 
+Full reference with inputs, outputs and error codes: [docs/API.md](docs/API.md). Click-to-database traces per feature: [docs/FLOWS.md](docs/FLOWS.md).
+
 | Procedure | Who | Does |
 |---|---|---|
 | `booking.classes` | anyone | upcoming classes with seats left |
@@ -257,4 +259,4 @@ Regular enrollment · a real payment provider and its webhooks · real authentic
 
 ## Docs
 
-[PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Feature list & traceability](docs/FEATURE_LIST.md) · [Design system](docs/DESIGN.md) · [Folder structure](docs/folder-structure.md) · [AI usage](docs/AI_USAGE.md)
+[PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Feature flows](docs/FLOWS.md) · [API reference](docs/API.md) · [Feature list & traceability](docs/FEATURE_LIST.md) · [Design system](docs/DESIGN.md) · [Folder structure](docs/folder-structure.md) · [AI usage](docs/AI_USAGE.md)
